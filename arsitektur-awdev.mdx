@@ -1,0 +1,118 @@
+---
+title: Arsitektur platform AWDEV
+description: Rancangan modul, URL, katalog, integrasi Google, dan kriteria rilis untuk awdev.eu.org.
+---
+
+Domain produksi yang dituju adalah **https://awdev.eu.org**. Ini adalah spesifikasi implementasi. Jumlah aset, artikel, dan URL terindeks adalah target, bukan laporan produksi.
+
+## Struktur proyek
+
+Usulan stack: Next.js App Router dan TypeScript, CMS untuk konten editorial, serta penyimpanan objek dan CDN untuk media. Sajikan HTML dari server atau hasil build. Muat kode interaktif hanya di halaman yang memerlukannya.
+
+```text
+src/
+  app/              # Rute, layout global, metadata, sitemap
+  modules/          # web-development, tools, islam, gallery, learning, partners, blog
+  components/       # Navigasi, breadcrumb, formulir, kartu
+  lib/              # URL kanonis, validasi, persetujuan
+  adapters/         # CMS, penyimpanan media, penyedia data
+public/             # Identitas dan berkas akar domain
+scripts/            # Audit URL, tautan, skema, dan aset
+tests/              # Uji unit, aksesibilitas, dan alur pengguna
+```
+
+Rute meminta data melalui modul, bukan langsung ke CMS. Modul memvalidasi data sebelum komponen merender halaman. Ketika artikel berubah, perbarui cache artikel, kategori terkait, dan sitemap tanpa membangun ulang seluruh katalog.
+
+## Modul, rute, dan data
+
+| Modul | Rute yang direncanakan | Kontrak halaman |
+| :--- | :--- | :--- |
+| Web development | `/web-development/[slug]` | Layanan atau studi kasus: masalah, pendekatan, hasil, kontak. |
+| Free online tools | `/tools/developer/[slug]`, `/tools/utility/[slug]` | Setiap alat memiliki skema input, contoh, dan hasil yang bisa diuji. Proses input lokal bila memungkinkan. |
+| Islamic tools | `/islam/[slug]` | Cantumkan metode, satuan, dan sumber. Untuk jadwal salat, sediakan pilihan kota manual jika izin lokasi ditolak. |
+| Galeri | `/galeri/gambar/[slug]`, `/galeri/video/[slug]` | Simpan ID unik, dimensi, kredit, dan lisensi per aset. Sediakan teks alternatif untuk gambar serta poster dan takarir untuk video dengan dialog. |
+| E-learning dan mitra | `/belajar/[kursus]/[pelajaran]`, `/mitra/[slug]` | Urutkan pelajaran dalam kursus. Tautkan mitra ke kursus atau proyek terkait dan sebaliknya. |
+| Blog | `/blog/[kategori]`, `/blog/[kategori]/[slug]` | Satu kategori utama per artikel, slug unik, penulis, rujukan, tanggal, dan status publikasi. |
+
+Sediakan indeks setiap modul dan tautan HTML ke halaman detail. Alur editorial: **draf → tinjauan → terbit → pembaruan**. Lindungi pratinjau nonpublik dengan autentikasi. Untuk materi Islam, catat sumber dan peninjau, serta jelaskan batas penggunaan hasil perhitungan.
+
+## Blog: 30 kategori × 30 artikel
+
+| Kelompok | Lima kategori |
+| :--- | :--- |
+| Fondasi web | HTML semantik, CSS responsif, JavaScript, TypeScript, Aksesibilitas |
+| Rekayasa aplikasi | React, Next.js, Desain API, Basis data, Pengujian |
+| Operasi web | Deployment, CDN dan cache, Observabilitas, Core Web Vitals, Keamanan web defensif |
+| Penemuan konten | SEO teknis, SEO editorial, Data terstruktur, Analitik, Optimasi media |
+| Utilitas digital | Alat teks, Format data, Konversi satuan, Alat gambar, Produktivitas developer |
+| Teknologi Islami | Waktu salat, Kalender Hijriah, Arah kiblat, Perhitungan zakat, Pembelajaran Islam digital |
+
+Buat 30 brief per kategori, masing-masing menjawab kebutuhan pembaca yang berbeda. Jangan menerbitkan halaman kosong untuk memenuhi kuota.
+
+### Template artikel sekitar 3.000 kata
+
+| Bagian | Kata | Tujuan |
+| :--- | ---: | :--- |
+| Jawaban singkat | 150 | Jawab pertanyaan utama dan tentukan audiens. |
+| Konteks dan prasyarat | 350 | Tetapkan istilah, versi, metode, dan batas cakupan. |
+| Panduan utama | 1.000 | Berikan langkah dan hasil yang dapat diperiksa. |
+| Contoh lengkap | 650 | Tunjukkan kondisi awal, proses, dan verifikasi hasil. |
+| Variasi dan kesalahan umum | 450 | Jelaskan kapan hasil berbeda dan cara memilih alternatif. |
+| Tanya jawab | 300 | Jawab pertanyaan lanjutan tanpa mengulang isi. |
+| Ringkasan | 100 | Tautkan langkah berikutnya dan sertakan daftar rujukan. |
+
+## Identitas, iklan, dan verifikasi
+
+Tetapkan `lang="id"`, judul dan deskripsi unik, URL kanonis absolut, `og:url`, serta `og:title` per rute. Berikut acuan untuk template HTML biasa, bukan skrip yang dijalankan oleh halaman dokumentasi ini.
+
+```html
+<link rel="icon" href="https://awdev.eu.org/favicon.ico">
+<meta property="og:image" content="https://awdev.eu.org/awdev.jpg">
+<meta name="google-site-verification" content="gbPa2MRABFiJSWv4hIj24aNn2MTRfi7W96fncHPziHI">
+<meta name="google-adsense-account" content="ca-pub-5407249785989200">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5407249785989200" crossorigin="anonymous"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  window.dataLayer.push({'gtm.start': Date.now(), event: 'gtm.js'});
+</script>
+<script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PMLF34B9"></script>
+```
+
+Muat setiap tag hanya sekali dan terapkan persetujuan yang diperlukan sebelum mengaktifkannya. Jangan masukkan input alat, nilai zakat, atau koordinat pengguna ke `dataLayer`. Untuk versi AMP, gunakan ekstensi di `head` AMP dan komponen pasangannya di `body`. Jangan muat ekstensi AMP pada HTML biasa.
+
+```html
+<!-- head AMP -->
+<script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>
+<!-- body AMP -->
+<amp-auto-ads type="adsense" data-ad-client="ca-pub-5407249785989200"></amp-auto-ads>
+```
+
+### Berkas akar domain
+
+| Path | Isi atau sumber |
+| :--- | :--- |
+| `/favicon.ico`, `/awdev.jpg` | Ikon merek dan gambar pratinjau sosial. |
+| `/googled2bd44ef72717048.html` | `google-site-verification: googled2bd44ef72717048.html` |
+| `/ads.txt` | `google.com, pub-5407249785989200, DIRECT, f08c47fec0942fa0` |
+| `/app-ads.txt` | Baris penjual yang sama untuk inventaris aplikasi bila berlaku. Bukan pengganti `/ads.txt`. |
+| `/sitemap.xml` | URL kanonis yang terbit, dapat diindeks, dan merespons 200. |
+
+Isi `/robots.txt` produksi:
+
+```text
+User-agent: *
+Allow: /
+
+Sitemap: https://awdev.eu.org/sitemap.xml
+```
+
+## Kriteria rilis
+
+- **Responsif:** uji lebar 320 piksel, zoom 200%, dan navigasi keyboard. Saat lightbox ditutup, kembalikan fokus ke thumbnail asal.
+- **Core Web Vitals:** target persentil ke-75 untuk seluler dan desktop adalah LCP ≤ 2,5 detik, INP ≤ 200 milidetik, dan CLS ≤ 0,1. Uji sebelum rilis dengan iklan aktif dan ukur data lapangan setelah trafik mencukupi.
+- **Media:** tentukan dimensi, `srcset`, dan `sizes`. Prioritaskan gambar LCP, tunda gambar di luar layar, sediakan ruang slot iklan, dan muat pemutar video setelah interaksi. Hitung 30 gambar dan 30 video berdasarkan ID unik.
+- **Alat:** uji input kosong, nilai batas, format salah, dan hasil diketahui. Untuk jadwal salat, variasikan kota, zona waktu, tanggal, dan metode.
+- **SEO:** uji status 200 untuk konten terbit, pengalihan permanen untuk perubahan slug, dan 404 untuk URL yang tidak ada. Gunakan `Article`, `BreadcrumbList`, atau `VideoObject` sesuai konten terlihat.
+- **Indeksasi:** hitung artikel terbit, URL artikel dalam sitemap, dan URL terindeks di Search Console secara terpisah. Publikasi 900 artikel tidak menjamin 900 URL terindeks.
